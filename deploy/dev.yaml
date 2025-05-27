@@ -1,0 +1,7 @@
+artifactId=test-app
+appversion=1.0.0
+appname=test-app
+appruntime=4.4.0
+replicas=1
+vcore=0.1
+mule.env=dev

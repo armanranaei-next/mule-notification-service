@@ -1,0 +1,14 @@
+#%RAML 1.0
+title: sys-api-1-healthcheck-demo-specs
+
+/healthcheck:
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "service is running"

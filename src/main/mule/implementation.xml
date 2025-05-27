@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:redis="http://www.mulesoft.org/schema/mule/redis"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/redis http://www.mulesoft.org/schema/mule/redis/current/mule-redis.xsd">
+	<flow name="post-emails-implementation-flow" doc:id="a4855ee9-ad35-47bb-addf-ef4ff06c0493" >
+		<logger level="INFO" doc:name="START" doc:id="f4734367-bd62-4136-b32d-d43a7e9da4ab" message="START - Send email"/>
+		<first-successful doc:name="First Successful" doc:id="4a181a2c-c9d6-4481-8648-9988f3e895ca" >
+			<route >
+				<email:send doc:name="Send Gmail" doc:id="4356d79b-b749-463f-96a8-efcb5bee37fb" config-ref="SMTPS_Gmail_Relay" toAddresses="#[payload.to_addresses]" fromAddress="#[payload.from_address]" subject="#[payload.subject]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output text/plain
+---
+payload.body]]]></email:content>
+			</email:body>
+		</email:send>
+			</route>
+			<route >
+				<email:send doc:name="Send Sendgrid" doc:id="13e81ba4-e176-4542-8b0d-d5f930e09e16" config-ref="SMTP_Sendgrid" fromAddress="#[payload.from_address]" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+					<email:body contentType="text/html">
+						<email:content><![CDATA[#[output text/plain
+---
+payload.body]]]></email:content>
+					</email:body>
+				</email:send>
+				<flow-ref doc:name="send-fallback-alert" doc:id="b5b4c7f9-d162-43dc-baf1-9e71f83d9dfc" name="send-fallback-alert"/>
+			</route>
+		</first-successful>
+		<logger level="INFO" doc:name="END" doc:id="25116c7c-5ba8-4356-9ad8-6e519ac1bc70" message="END - Send email" />
+	</flow>
+	<sub-flow name="send-fallback-alert" doc:id="8036f945-6f6b-4d98-b814-0c7a01c02a1f" >
+		<ee:transform doc:name="buildTemplate" doc:id="c929b858-ed3a-431d-aeb9-c99e0b751b42">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="alertMessage" ><![CDATA[%dw 2.0
+output text/plain
+import * from modules::NotificationLibrary
+
+var params = {
+	from: payload.from_address,
+	to: payload.to_addresses,
+	subject: payload.subject
+	}
+
+---
+startTemplate() ++
+
+printTable("A mail was not delivered using Gmail due to an issue with the system. Fallback system has been used. Mail details:",params)
+
+++ endTemplate()]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<email:send doc:name="Send fallback alert with Sendgrid" doc:id="ea24956e-83bc-4a90-807c-e1804db3c39f" config-ref="SMTP_Sendgrid" fromAddress="${address.fallbackAlert.receiver}" subject="#[payload.subject]">
+			<email:to-addresses>
+				<email:to-address value="${address.fallbackAlert.receiver}" />
+					</email:to-addresses>
+					<email:body contentType="text/html">
+				<email:content><![CDATA[#[output text/plain
+---
+vars.alertMessage]]]></email:content>
+			</email:body>
+		</email:send>
+	</sub-flow>
+	<flow name="post-notification-implementation-flow" doc:id="c9cd40a1-bca2-457f-8c66-b5abca47b508" >
+		<logger level="INFO" doc:name="START" doc:id="59d91a65-cf48-4fd4-9545-6fd038e276ff" message="START - Send email" />
+		<set-variable value='#[(payload.template default "base")]' doc:name="templateName" doc:id="aaf4cd3f-aaff-437d-9009-754f07436510" variableName="templateName"/>
+		<ee:transform doc:name="buildTemplate" doc:id="238e74bf-09bb-4f79-aff1-74b4b95a487c" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="builtTemplate" ><![CDATA[%dw 2.0
+output text/plain
+import * from modules::NotificationLibrary
+
+---
+startTemplate() ++
+(vars.templateName match {
+	case "alert" -> printTable("Alert",payload.params) ++ (payload.body default "")
+	case "base"  -> payload.body default ""
+	else 	     ->	payload.body default ""
+})
+++ endTemplate()]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<first-successful doc:name="First Successful" doc:id="6adae924-9fcd-46c5-ab0e-2fb98f345a2e" >
+			<route >
+				<email:send doc:name="send notification" doc:id="c730de94-a184-416a-9d3e-03dac5eafcb2" config-ref="SMTPS_Gmail_Relay" fromAddress='${address.notification.sender}' subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output text/plain
+---
+vars.builtTemplate]]]></email:content>
+			</email:body>
+		</email:send>
+			</route>
+			<route >
+				<email:send doc:name="Send Sendgrid" doc:id="cda6b68b-86dc-43ed-8830-b4e1f1986487" config-ref="SMTP_Sendgrid" fromAddress="${address.notification.sender}" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output text/plain
+---
+payload.body]]]></email:content>
+			</email:body>
+		</email:send>
+				<flow-ref doc:name="send-fallback-alert" doc:id="a224e4b0-acaf-4696-88a8-b4ca93545388" name="send-fallback-alert" />
+			</route>
+		</first-successful>
+		<logger level="INFO" doc:name="END" doc:id="f01ea551-a4a3-424c-94dd-2c87e7830b94" message="END - Send email" />
+	</flow>
+</mule>
