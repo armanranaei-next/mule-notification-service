@@ -10,7 +10,7 @@
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
             </http:error-response>
         </http:listener>
-        <apikit:router config-ref="mule-4-application-template-api-config" />
+        <apikit:router config-ref="apikit-config" />
         <error-handler>
             <on-error-propagate type="APIKIT:BAD_REQUEST">
                 <ee:transform>
@@ -90,99 +90,35 @@ output application/json
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
-			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f769b517-8037-47aa-ba8c-444ce4d90c4d" >
-				<logger level="ERROR" doc:name="Logger" doc:id="308397a3-4958-4588-8925-44d084c0cfb6" message="Error - Error detail : #[error.description]"/>
-				<ee:transform doc:name="Transform Message" doc:id="d387e996-2ea3-4562-b60e-efacdc9089ff" >
-					<ee:message >
-						<ee:set-payload ><![CDATA[%dw 2.0
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="f769b517-8037-47aa-ba8c-444ce4d90c4d">
+                <logger level="ERROR" doc:name="Logger" doc:id="308397a3-4958-4588-8925-44d084c0cfb6" message="Error - Error detail : #[error.description]" />
+                <ee:transform doc:name="Transform Message" doc:id="d387e996-2ea3-4562-b60e-efacdc9089ff">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
 	error: error.errorType,
 	message:error.description
 }]]></ee:set-payload>
-					</ee:message>
-					<ee:variables >
-						<ee:set-variable variableName="httpStatus" ><![CDATA[500]]></ee:set-variable>
-					</ee:variables>
-				</ee:transform>
-			</on-error-propagate>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[500]]></ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
         </error-handler>
     </flow>
-    <flow name="post:\emails:application\json:mule-4-application-template-api-config">
-        <!-- [STUDIO:"post-emails-implementation-flow"]<flow-ref doc:name="post-emails-implementation-flow" doc:id="542f142d-287e-46be-87b4-149930030706" name="post-emails-implementation-flow" /> [STUDIO] -->
-		<ee:transform doc:name="Transform Message" doc:id="2ef03a97-5038-4f33-8292-68189bf9b611" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"test": "Hello"
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+	<flow name="post:\email:application\json:apikit-config">
+		<flow-ref doc:name="post-emails-implementation-flow" doc:id="3746b40f-add4-47a2-b567-405f54dbb615" name="post-emails-implementation-flow"/>
     </flow>
-    <flow name="get:\notifications\templates:mule-4-application-template-api-config">
-        <ee:transform doc:name="NOT IMPLEMENTED" doc:id="fb9bf0e9-fa9b-4d4d-ad29-7f1ea2b7a75a">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  "meta": {
-    "status": "failed",
-    "correlationId": correlationId,
-    "messages": [
-      {
-        "code": "NOT_IMPLEMENTED",
-        "level": "error",
-        "text": "The server either does not recognize the request method, or it lacks the ability to fulfill the request."
-      }
-    ]
-  }
-}]]></ee:set-payload>
-            </ee:message>
-            <ee:variables>
-                <ee:set-variable variableName="httpStatus"><![CDATA[501]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+    <flow name="post:\email:multipart\form-data:apikit-config">
+        <flow-ref doc:name="post-emails-form-data-implementation-flow" doc:id="74bee8d8-ea23-42d9-b57e-e2c7273edab7" name="post-emails-form-data-implementation-flow"/>
     </flow>
-    <flow name="post:\emails:multipart\form-data:mule-4-application-template-api-config">
-        <ee:transform doc:name="NOT IMPLEMENTED">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
----
-{
-  "meta": {
-    "status": "failed",
-    "correlationId": correlationId,
-    "messages": [
-      {
-        "code": "NOT_IMPLEMENTED",
-        "level": "error",
-        "text": "The server either does not recognize the request method, or it lacks the ability to fulfill the request."
-      }
-    ]
-  }
-}]]></ee:set-payload>
-            </ee:message>
-            <ee:variables>
-                <ee:set-variable variableName="httpStatus"><![CDATA[501]]></ee:set-variable>
-            </ee:variables>
-        </ee:transform>
+    <flow name="post:\notification:application\json:apikit-config">
+        <flow-ref doc:name="post-notification-implementation-flow" doc:id="34edb9dd-08c3-46f3-8e81-c4b9f29b1910" name="post-notification-implementation-flow"/>
     </flow>
-    <flow name="post:\notifications:application\json:mule-4-application-template-api-config">
-        <!-- [STUDIO:"post-notification-implementation-flow"]<flow-ref doc:name="post-notification-implementation-flow" doc:id="7eaa6dd8-1e81-4852-b0d5-a4cc33d84ea3" name="post-notification-implementation-flow" /> [STUDIO] -->
-		<ee:transform doc:name="Transform Message" doc:id="329ef2f8-ca13-490a-8758-d92bd47c707c" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
----
-{
-	"test": "Hello"
-}]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+    <flow name="post:\notification:multipart\form-data:apikit-config">
+        <flow-ref doc:name="post-notification-form-data-implementation-flow" doc:id="fe8118f0-e83d-462e-b517-2e39179b69a1" name="post-notification-form-data-implementation-flow"/>
     </flow>
 </mule>

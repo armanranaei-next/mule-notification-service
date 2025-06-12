@@ -1,55 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
-	xmlns:email="http://www.mulesoft.org/schema/mule/email"
-	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
-	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:http="http://www.mulesoft.org/schema/mule/http"
-	xmlns="http://www.mulesoft.org/schema/mule/core"
-	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
-http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
-http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
-http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
-http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
-	<apikit:config name="mule-4-application-template-api-config" api="resource::d5986291-d221-4579-b2de-b3c3b5371f38:mule-notification-service:1.0.2:raml:zip:mule-notification-service.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus"/>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation=" http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd  http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <apikit:config name="apikit-config" api="resource::d5986291-d221-4579-b2de-b3c3b5371f38:mule-notification-service:2.0.0:raml:zip:mule-notification-service.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <global-property doc:name="Global Property" doc:id="ee0e5872-cf0c-475e-beef-c9ac51ae832a" name="mule.env" value="local" />
-	<configuration-properties doc:name="Configuration properties" doc:id="9dd3531f-c9ab-4ff4-9373-510cab1d21eb" file="properties/${mule.env}-properties.yaml" />
-	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e4e80eaa-666b-45b1-a1ce-2d3e5ac3da5d">
-		<http:listener-connection host="0.0.0.0" port="${http.port}" />
-	</http:listener-config>
-	<api-gateway:autodiscovery apiId="${autodiscovery.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2d3eaede-9382-405f-86d0-4ffe6c909175" flowRef="mule-4-application-template-api-main" />
-	<configuration doc:name="Configuration" doc:id="a534fc41-3908-4c68-8f25-3f92a5cfb85f" defaultErrorHandler-ref="global-error-handler" />
-	<email:smtp-config name="SMTP_Sendgrid" doc:name="Email SMTP" doc:id="f77641b6-63ca-4b75-bcfc-55d4c523b556" >
+    <configuration-properties doc:name="Configuration properties" doc:id="9dd3531f-c9ab-4ff4-9373-510cab1d21eb" file="properties/${mule.env}-properties.yaml" />
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e4e80eaa-666b-45b1-a1ce-2d3e5ac3da5d">
+        <http:listener-connection host="0.0.0.0" port="${http.port}" />
+    </http:listener-config>
+    <api-gateway:autodiscovery apiId="${autodiscovery.id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2d3eaede-9382-405f-86d0-4ffe6c909175" flowRef="mule-4-application-template-api-main" />
+    <configuration doc:name="Configuration" doc:id="a534fc41-3908-4c68-8f25-3f92a5cfb85f" defaultErrorHandler-ref="global-error-handler" />
+    <email:smtp-config name="SMTP_Sendgrid" doc:name="Email SMTP" doc:id="f77641b6-63ca-4b75-bcfc-55d4c523b556">
         <email:smtps-connection host="${smtp.sendgrid.host}" user="${smtp.sendgrid.user}" password="${smtp.sendgrid.password}" port="${smtp.sendgrid.port}">
-          	<tls:context enabledProtocols="TLSv1.1, TLSv1.2">
-            	<tls:trust-store insecure="true"/>
-        	</tls:context>
+            <tls:context enabledProtocols="TLSv1.1, TLSv1.2">
+                <tls:trust-store insecure="true" />
+            </tls:context>
         </email:smtps-connection>
-	</email:smtp-config>
-	<error-handler name="global-error-handler" doc:id="6b60b41e-ae36-49b8-91ee-0bf05a27b5ae" >
-		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8d3bf539-85c9-448d-9cf7-197b9729722b" >
-			<logger level="INFO" doc:name="Logger" doc:id="be8f4b10-80e5-4e3d-a79d-b69db78f2209" />
-		</on-error-propagate>
-	</error-handler>
-	<email:smtp-config name="SMTPS_Gmail_Relay" doc:name="Email SMTP" doc:id="e5caf3fb-acb8-4219-9b08-39c0d7be2987" >
+    </email:smtp-config>
+    <error-handler name="global-error-handler" doc:id="6b60b41e-ae36-49b8-91ee-0bf05a27b5ae">
+        <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8d3bf539-85c9-448d-9cf7-197b9729722b">
+            <ee:transform doc:name="Create Error Response" doc:id="1b776769-94e4-4bca-b3de-f0b6ca45a1e5">
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"meta": {
+		"status": "failed",
+		"correlation_id": correlationId,
+		"messages": [{
+			"error": {
+				"errorType": error.errorType.identifier,
+				"message": error.description
+			}
+		}]
+	}
+}]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+            <logger level="INFO" doc:name="Logger" doc:id="be8f4b10-80e5-4e3d-a79d-b69db78f2209" />
+        </on-error-propagate>
+    </error-handler>
+    <email:smtp-config name="SMTPS_Gmail_Relay" doc:name="Email SMTP" doc:id="e5caf3fb-acb8-4219-9b08-39c0d7be2987">
         <email:smtps-connection host="${smtp.gmail.host}" port="${smtp.gmail.port}" password="${smtp.gmail.password}" user="${smtp.gmail.user}">
-        <tls:context enabledProtocols="TLSv1.1, TLSv1.2">
-            <tls:trust-store insecure="true"/>
-        </tls:context>
-    	</email:smtps-connection>
-	</email:smtp-config>
-	<email:smtp-config name="SMTP_Gmail_Relay" doc:name="Email SMTP" doc:id="3434b90a-b1b7-4b41-bd26-3f48f29e5590" >
-		<email:smtp-connection host="${smtp.gmail.host}" user="${smtp.gmail.user}" password="${smtp.gmail.password}" />
-	</email:smtp-config>
-	<email:smtp-config name="SMTP_Gmail_Relay_No_Auth" doc:name="Email SMTP" doc:id="a0108fbb-ce2a-4acd-9b4f-6aefe1809fa1" >
-		<email:smtp-connection host="${smtp.gmail.host}" user='""' password='""'/>
-	</email:smtp-config>
-	<email:smtp-config name="Office365_SMTP_Config" doc:name="Email SMTP" doc:id="adf24aae-397d-43cb-9921-f6d44945cfab" >
-		<email:smtp-connection port="${smtp.office365.port}" user="${smtp.office365.user}" password="${smtp.office365.password}" host="${smtp.office365.host}">
-			<email:properties>
-				<email:property key="mail.smtp.starttls.enable" value="true" />
-				<email:property key="mail.smtp.ssl.enable" value="false" />
-				<email:property key="mail.debug" value="true" />
-			</email:properties>
-		</email:smtp-connection>
-	</email:smtp-config>
- </mule>
+            <tls:context enabledProtocols="TLSv1.1, TLSv1.2">
+                <tls:trust-store insecure="true" />
+            </tls:context>
+        </email:smtps-connection>
+    </email:smtp-config>
+    <email:smtp-config name="SMTP_Gmail_Relay" doc:name="Email SMTP" doc:id="3434b90a-b1b7-4b41-bd26-3f48f29e5590">
+        <email:smtp-connection host="${smtp.gmail.host}" user="${smtp.gmail.user}" password="${smtp.gmail.password}" />
+    </email:smtp-config>
+    <email:smtp-config name="SMTP_Gmail_Relay_No_Auth" doc:name="Email SMTP" doc:id="a0108fbb-ce2a-4acd-9b4f-6aefe1809fa1">
+        <email:smtp-connection host="${smtp.gmail.host}" user="&quot;&quot;" password="&quot;&quot;" />
+    </email:smtp-config>
+    <email:smtp-config name="Office365_SMTP_Config" doc:name="Email SMTP" doc:id="adf24aae-397d-43cb-9921-f6d44945cfab">
+        <email:smtp-connection port="${smtp.office365.port}" user="${smtp.office365.user}" password="${smtp.office365.password}" host="${smtp.office365.host}">
+            <email:properties>
+                <email:property key="mail.smtp.starttls.enable" value="true" />
+                <email:property key="mail.smtp.ssl.enable" value="false" />
+                <email:property key="mail.debug" value="true" />
+            </email:properties>
+        </email:smtp-connection>
+    </email:smtp-config>
+</mule>

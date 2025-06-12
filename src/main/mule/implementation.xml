@@ -1,42 +1,37 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:redis="http://www.mulesoft.org/schema/mule/redis"
-	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:email="http://www.mulesoft.org/schema/mule/email"
-	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+<mule xmlns:mule-notification-service="http://www.mulesoft.org/schema/mule/mule-notification-service"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:redis="http://www.mulesoft.org/schema/mule/redis"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
 http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
 http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
-http://www.mulesoft.org/schema/mule/redis http://www.mulesoft.org/schema/mule/redis/current/mule-redis.xsd">
-	<flow name="post-emails-implementation-flow" doc:id="a4855ee9-ad35-47bb-addf-ef4ff06c0493" >
-		<logger level="INFO" doc:name="START" doc:id="f4734367-bd62-4136-b32d-d43a7e9da4ab" message="START - Send email"/>
-		<first-successful doc:name="First Successful" doc:id="4a181a2c-c9d6-4481-8648-9988f3e895ca" >
-			<route >
-				<email:send doc:name="Send Gmail" doc:id="4356d79b-b749-463f-96a8-efcb5bee37fb" config-ref="SMTPS_Gmail_Relay" toAddresses="#[payload.to_addresses]" fromAddress="#[payload.from_address]" subject="#[payload.subject]">
-			<email:body contentType="text/html">
-				<email:content><![CDATA[#[output text/plain
+http://www.mulesoft.org/schema/mule/redis http://www.mulesoft.org/schema/mule/redis/current/mule-redis.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/mule-notification-service http://www.mulesoft.org/schema/mule/mule-notification-service/current/mule-mule-notification-service.xsd">
+	<sub-flow name="create-success-response" doc:id="c09c5bb2-8610-4da1-b7a7-017295210e47">
+		<ee:transform doc:name="Create Success Response" doc:id="2ec0cb58-fcff-4364-a5a6-188dd00213a7">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
 ---
-payload.body]]]></email:content>
-			</email:body>
-		</email:send>
-			</route>
-			<route >
-				<email:send doc:name="Send Sendgrid" doc:id="13e81ba4-e176-4542-8b0d-d5f930e09e16" config-ref="SMTP_Sendgrid" fromAddress="#[payload.from_address]" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
-					<email:body contentType="text/html">
-						<email:content><![CDATA[#[output text/plain
----
-payload.body]]]></email:content>
-					</email:body>
-				</email:send>
-				<flow-ref doc:name="send-fallback-alert" doc:id="b5b4c7f9-d162-43dc-baf1-9e71f83d9dfc" name="send-fallback-alert"/>
-			</route>
-		</first-successful>
-		<logger level="INFO" doc:name="END" doc:id="25116c7c-5ba8-4356-9ad8-6e519ac1bc70" message="END - Send email" />
-	</flow>
-	<sub-flow name="send-fallback-alert" doc:id="8036f945-6f6b-4d98-b814-0c7a01c02a1f" >
+{
+  "meta": {
+    "status": "succeeded",
+    "correlation_id": correlationId,
+    "messages": [
+
+    ]
+  }
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+	<sub-flow name="send-fallback-alert" doc:id="8036f945-6f6b-4d98-b814-0c7a01c02a1f">
 		<ee:transform doc:name="buildTemplate" doc:id="c929b858-ed3a-431d-aeb9-c99e0b751b42">
 			<ee:message />
 			<ee:variables>
-				<ee:set-variable variableName="alertMessage" ><![CDATA[%dw 2.0
+				<ee:set-variable variableName="alertMessage"><![CDATA[%dw 2.0
 output text/plain
 import * from modules::NotificationLibrary
 
@@ -59,54 +54,298 @@ printTable("A mail was not delivered using Gmail due to an issue with the system
 				<email:to-address value="${address.fallbackAlert.receiver}" />
 					</email:to-addresses>
 					<email:body contentType="text/html">
-				<email:content><![CDATA[#[output text/plain
+				<email:content><![CDATA[#[output application/java
 ---
 vars.alertMessage]]]></email:content>
 			</email:body>
 		</email:send>
 	</sub-flow>
-	<flow name="post-notification-implementation-flow" doc:id="c9cd40a1-bca2-457f-8c66-b5abca47b508" >
-		<logger level="INFO" doc:name="START" doc:id="59d91a65-cf48-4fd4-9545-6fd038e276ff" message="START - Send email" />
-		<set-variable value='#[(payload.template default "base")]' doc:name="templateName" doc:id="aaf4cd3f-aaff-437d-9009-754f07436510" variableName="templateName"/>
-		<ee:transform doc:name="buildTemplate" doc:id="238e74bf-09bb-4f79-aff1-74b4b95a487c" >
-			<ee:message >
-			</ee:message>
-			<ee:variables >
-				<ee:set-variable variableName="builtTemplate" ><![CDATA[%dw 2.0
-output text/plain
-import * from modules::NotificationLibrary
-
----
-startTemplate() ++
-(vars.templateName match {
-	case "alert" -> printTable("Alert",payload.params) ++ (payload.body default "")
-	case "base"  -> payload.body default ""
-	else 	     ->	payload.body default ""
-})
-++ endTemplate()]]></ee:set-variable>
-			</ee:variables>
-		</ee:transform>
-		<first-successful doc:name="First Successful" doc:id="6adae924-9fcd-46c5-ab0e-2fb98f345a2e" >
+	<flow name="post-emails-implementation-flow" doc:id="a4855ee9-ad35-47bb-addf-ef4ff06c0493" >
+		<logger level="INFO" doc:name="START" doc:id="f4734367-bd62-4136-b32d-d43a7e9da4ab" message="START - Send email"/>
+		<first-successful doc:name="First Successful" doc:id="4a181a2c-c9d6-4481-8648-9988f3e895ca" >
 			<route >
-				<email:send doc:name="send notification" doc:id="c730de94-a184-416a-9d3e-03dac5eafcb2" config-ref="SMTPS_Gmail_Relay" fromAddress='${address.notification.sender}' subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+				<email:send doc:name="Send Gmail" doc:id="4356d79b-b749-463f-96a8-efcb5bee37fb" config-ref="SMTPS_Gmail_Relay" toAddresses="#[payload.to_addresses]" fromAddress="#[payload.from_address]" subject="#[payload.subject]">
 			<email:body contentType="text/html">
-				<email:content><![CDATA[#[output text/plain
----
-vars.builtTemplate]]]></email:content>
-			</email:body>
-		</email:send>
-			</route>
-			<route >
-				<email:send doc:name="Send Sendgrid" doc:id="cda6b68b-86dc-43ed-8830-b4e1f1986487" config-ref="SMTP_Sendgrid" fromAddress="${address.notification.sender}" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
-			<email:body contentType="text/html">
-				<email:content><![CDATA[#[output text/plain
+				<email:content><![CDATA[#[output application/java
 ---
 payload.body]]]></email:content>
 			</email:body>
 		</email:send>
-				<flow-ref doc:name="send-fallback-alert" doc:id="a224e4b0-acaf-4696-88a8-b4ca93545388" name="send-fallback-alert" />
+			</route>
+			<route >
+				<email:send doc:name="Send Sendgrid" doc:id="003d2637-c3e0-489c-9a0d-be55a93c3d31" config-ref="SMTP_Sendgrid" fromAddress="#[payload.from_address]" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output application/java
+---
+payload.body]]]></email:content>
+			</email:body>
+		</email:send>
+				<flow-ref doc:name="send-fallback-alert" doc:id="b5b4c7f9-d162-43dc-baf1-9e71f83d9dfc" name="send-fallback-alert" />
 			</route>
 		</first-successful>
-		<logger level="INFO" doc:name="END" doc:id="f01ea551-a4a3-424c-94dd-2c87e7830b94" message="END - Send email" />
+		<flow-ref doc:name="create-success-response" doc:id="00c2ee4e-5e05-4099-a976-70866eacb0f0" name="create-success-response" />
+		<logger level="INFO" doc:name="END" doc:id="25116c7c-5ba8-4356-9ad8-6e519ac1bc70" message="END - Send email" />
+	</flow>
+	<flow name="post-emails-form-data-implementation-flow" doc:id="9a100ef0-4058-45a2-8ae4-fa1286ce1251" >
+		<logger level="INFO" doc:name="START" doc:id="f17abc2a-d4be-4449-aefd-f2db3becbcb3" message="START - Send email" />
+		<ee:transform doc:name="Transform Payload" doc:id="d3083481-ee54-4468-8c84-597dfaff047e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json  
+---
+{
+  from_address: payload.parts.from_address.content as String,
+  to_addresses: (payload.parts.to_addresses.content as String) splitBy "," map (email) -> trim(email),
+  subject: payload.parts.subject.content as String,
+  body: payload.parts.body.content as String,
+  attachments: payload.parts.*files reduce ((item, acc = {}) -> 
+    acc ++ {
+      (item.headers["Content-Disposition"].filename as String): item.content
+    }
+  )
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<first-successful doc:name="First Successful" doc:id="d043efd5-fb04-4352-86c0-89b9c697ba65" >
+			<route >
+				<email:send doc:name="Send Gmail" doc:id="0e0c2759-bc29-452f-bf5a-2a68ad131e18" config-ref="SMTPS_Gmail_Relay" fromAddress="#[payload.from_address]" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output application/java
+---
+payload.body]]]></email:content>
+			</email:body>
+					<email:attachments ><![CDATA[#[payload.attachments]]]></email:attachments>
+		</email:send>
+			</route>
+			<route >
+				<email:send doc:name="Send Sendgrid" doc:id="23217004-a469-4110-ada4-f09b7a865dae" config-ref="SMTP_Sendgrid" fromAddress="#[payload.from_address]" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output application/java
+---
+payload.body]]]></email:content>
+			</email:body>
+			<email:attachments><![CDATA[#[payload.attachments]]]></email:attachments>
+		</email:send>
+				<flow-ref doc:name="send-fallback-alert" doc:id="e92d126c-38ee-41c9-989a-0c8bf068119b" name="send-fallback-alert" />
+			</route>
+		</first-successful>
+		<flow-ref doc:name="create-success-response" doc:id="fe1c93fd-ad89-4fa9-8ca2-cd61916a60d6" name="create-success-response" />
+		<logger level="INFO" doc:name="END" doc:id="c53a10d5-b03c-4c28-be20-baac7efa5838" message="END - Send email" />
+	</flow>
+	<flow name="post-notification-implementation-flow" doc:id="fb390d0a-7d76-4676-ad7c-2418b92bad7c" >
+		<logger level="INFO" doc:name="START" doc:id="f34056e0-389e-40a0-8d17-baf0073023eb" message="START - Send Notification" />
+		<ee:transform doc:name="Transform Payload" doc:id="351a4fa6-e04a-4b41-8ce7-1f9494e0daf0" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="parsedContent" ><![CDATA[%dw 2.0
+fun generateTableHeaders(data) =
+  if ( !isEmpty(data) and data[0] is Object ) data[0] pluck $$ map ((key) -> "<th class='table-header'>$(upper(key replace "_" with " "))</th>") joinBy ""
+  else
+    ""
+fun renderCellValue(cellValue) =
+  cellValue match {
+	case is Array -> "<td class='cell'><ul class='nested-list'>" ++ (cellValue map "<li>$</li>" joinBy "") ++ "</ul></td>"
+    case is Object -> "<td class='cell'><ul class='nested-list object-list'>" ++ (cellValue pluck ((value, key) -> "<li><strong>$(key):</strong> $(value)</li>") joinBy "") ++ "</ul></td>"
+    case is Number -> "<td class='cell cell-number'>$(cellValue default "")</td>"
+    else -> "<td class='cell'>$(cellValue default "")</td>"
+}
+fun generateTableRows(data) =
+  if ( !isEmpty(data) and data[0] is Object ) data map ((rowObject) -> "<tr class='table-row'>" ++ ((rowObject pluck $) map renderCellValue($) joinBy "") ++ "</tr>") joinBy "\n"
+  else
+    "<tr><td class='cell cell-no-data' colspan='" ++ (sizeOf(data[0] pluck $$) default 1) ++ "'>No data available</td></tr>"
+fun printTable(tableData) = do {
+	var tableHeaders = generateTableHeaders(tableData)
+	var tableRows = generateTableRows(tableData)
+	---
+	'
+    <table class="dynamic-table">
+        <thead><tr>$tableHeaders</tr></thead>
+        <tbody>$tableRows</tbody>
+    </table>
+    '
+}
+fun printTitle(content) =
+  "<h1 class='dynamic-title'>$(content)</h1>"
+fun printText(content) =
+  "<p class='dynamic-text'>$(content)</p>"
+fun renderSingleButton(button) =
+  `
+    <td class="button-cell">
+        <a href="$(button.url default '#')" target="_blank" class="dynamic-button dynamic-button-$(button.style default 'primary')">$(button.text default 'Click Here')</a>
+    </td>
+  `
+fun printButton(content) = do {
+	var buttons = if ( content is Array ) content
+  else
+    [content]
+	var buttonsHtml = (buttons map renderSingleButton($)) joinBy ""
+	---
+	`
+    <table class="dynamic-button-container" border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td align="center">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                        $buttonsHtml
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+  `
+}
+fun parseBody(components) = 
+  ((components default []) map (component) -> component.'type' match {
+	case "title" -> printTitle(component.content)
+      case "text" -> printText(component.content)
+      case "table" -> printTable(component.content)
+      case "buttonGroup" -> printButton(component.content)
+      else -> ""
+}) joinBy ""
+output application/java
+---
+parseBody(payload.components)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<parse-template doc:name="Parse Notification HTML Template" doc:id="276e58f6-b591-4f91-9feb-d3e916619a5e" location="templates/base.html" target="html" />
+		<first-successful doc:name="First Successful" doc:id="6f3e3b79-d1b2-4cac-a93c-9ca16ca20f41">
+			<route>
+				<email:send doc:name="Send Gmail" doc:id="4d8b0e8f-fe36-40c0-a1c1-6b197f761dee" config-ref="SMTPS_Gmail_Relay" fromAddress="${address.notification.sender}" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+					<email:body contentType="text/html">
+						<email:content><![CDATA[#[output application/java
+---
+vars.html]]]></email:content>
+					</email:body>
+				</email:send>
+			</route>
+			<route>
+				<email:send doc:name="Send Sendgrid" doc:id="f3e2a32a-5890-4e7b-90b8-7222f551fed7" config-ref="SMTP_Sendgrid" fromAddress="${address.notification.sender}" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output application/java
+---
+vars.html]]]></email:content>
+			</email:body>
+		</email:send>
+				<flow-ref doc:name="send-fallback-alert" doc:id="bf23ca22-5f75-491c-8b21-3e3855a48b9a" name="send-fallback-alert" />
+			</route>
+		</first-successful>
+		<flow-ref doc:name="create-success-response" doc:id="9f5d4c9d-23dc-4e79-85b7-e8f9512e88cd" name="create-success-response"/>
+		<logger level="INFO" doc:name="END" doc:id="637ba9b8-aeec-455a-b9e2-def4acc883a9" message="END - Send Notification" />
+	</flow>
+	<flow name="post-notification-form-data-implementation-flow" doc:id="32f0873c-b5f5-4361-92ef-03751bb31a22" >
+		<logger level="INFO" doc:name="START" doc:id="76b2343a-cb4a-47d0-9e2b-692a2323729f" message="START - Send Notification" />
+		<ee:transform doc:name="Transform Payload" doc:id="9ebc39d0-4dc2-4ed5-ae35-b484b1c179d4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json  
+---
+{
+  to_addresses: (payload.parts.to_addresses.content as String) splitBy "," map (email) -> trim(email),
+  subject: payload.parts.subject.content as String,
+  attachments: payload.parts.*files reduce ((item, acc = {}) -> 
+    acc ++ {
+      (item.headers["Content-Disposition"].filename as String): item.content
+    }
+  )
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="parsedContent" ><![CDATA[%dw 2.0
+fun generateTableHeaders(data) =
+  if ( !isEmpty(data) and data[0] is Object ) data[0] pluck $$ map ((key) -> "<th class='table-header'>$(upper(key replace "_" with " "))</th>") joinBy ""
+  else
+    ""
+fun renderCellValue(cellValue) =
+  cellValue match {
+	case is Array -> "<td class='cell'><ul class='nested-list'>" ++ (cellValue map "<li>$</li>" joinBy "") ++ "</ul></td>"
+    case is Object -> "<td class='cell'><ul class='nested-list object-list'>" ++ (cellValue pluck ((value, key) -> "<li><strong>$(key):</strong> $(value)</li>") joinBy "") ++ "</ul></td>"
+    case is Number -> "<td class='cell cell-number'>$(cellValue default "")</td>"
+    else -> "<td class='cell'>$(cellValue default "")</td>"
+}
+fun generateTableRows(data) =
+  if ( !isEmpty(data) and data[0] is Object ) data map ((rowObject) -> "<tr class='table-row'>" ++ ((rowObject pluck $) map renderCellValue($) joinBy "") ++ "</tr>") joinBy "\n"
+  else
+    "<tr><td class='cell cell-no-data' colspan='" ++ (sizeOf(data[0] pluck $$) default 1) ++ "'>No data available</td></tr>"
+fun printTable(tableData) = do {
+	var tableHeaders = generateTableHeaders(tableData)
+	var tableRows = generateTableRows(tableData)
+	---
+	'
+    <table class="dynamic-table">
+        <thead><tr>$tableHeaders</tr></thead>
+        <tbody>$tableRows</tbody>
+    </table>
+    '
+}
+fun printTitle(content) =
+  "<h1 class='dynamic-title'>$(content)</h1>"
+fun printText(content) =
+  "<p class='dynamic-text'>$(content)</p>"
+fun renderSingleButton(button) =
+  `
+    <td class="button-cell">
+        <a href="$(button.url default '#')" target="_blank" class="dynamic-button dynamic-button-$(button.style default 'primary')">$(button.text default 'Click Here')</a>
+    </td>
+  `
+fun printButton(content) = do {
+	var buttons = if ( content is Array ) content
+  else
+    [content]
+	var buttonsHtml = (buttons map renderSingleButton($)) joinBy ""
+	---
+	`
+    <table class="dynamic-button-container" border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td align="center">
+                <table border="0" cellpadding="0" cellspacing="0">
+                    <tr>
+                        $buttonsHtml
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+  `
+}
+fun parseBody(components) = 
+  ((components default []) map (component) -> component.'type' match {
+	case "title" -> printTitle(component.content)
+      case "text" -> printText(component.content)
+      case "table" -> printTable(component.content)
+      case "buttonGroup" -> printButton(component.content)
+      else -> ""
+}) joinBy ""
+output application/java
+---
+parseBody(read(payload.parts.components.content,"application/json"))]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<parse-template doc:name="Parse Notification HTML Template" doc:id="4831cb08-31b4-4714-a273-77ab18a2ebb5" location="templates/base.html" target="html" />
+		<first-successful doc:name="First Successful" doc:id="b69e48c5-c37c-4e01-aab2-6ae7068031ce">
+			<route>
+				<email:send doc:name="Send Gmail" doc:id="bd7bd115-b36b-4afc-b535-dc9f474def02" config-ref="SMTPS_Gmail_Relay" fromAddress="${address.notification.sender}" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+					<email:body contentType="text/html">
+						<email:content><![CDATA[#[output application/java
+---
+vars.html]]]></email:content>
+					</email:body>
+					<email:attachments ><![CDATA[#[payload.attachments]]]></email:attachments>
+				</email:send>
+			</route>
+			<route>
+				<email:send doc:name="Send Sendgrid" doc:id="68b0e138-adb4-43cb-ab8c-0a7b012bb1bd" config-ref="SMTP_Sendgrid" fromAddress="${address.notification.sender}" subject="#[payload.subject]" toAddresses="#[payload.to_addresses]">
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[output application/java
+---
+vars.html]]]></email:content>
+			</email:body>
+			<email:attachments><![CDATA[#[payload.attachments]]]></email:attachments>
+		</email:send>
+				<flow-ref doc:name="send-fallback-alert" doc:id="27aaf33b-5c79-4c63-a135-55c21f3745be" name="send-fallback-alert" />
+			</route>
+		</first-successful>
+		<flow-ref doc:name="create-success-response" doc:id="a9a3389d-e744-429d-ba7f-35b48eaa6e68" name="create-success-response" />
+		<logger level="INFO" doc:name="END" doc:id="8a13daf8-7648-4e51-ab94-6c7ccc8ca399" message="END - Send Notification" />
 	</flow>
 </mule>
